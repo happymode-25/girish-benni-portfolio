@@ -189,6 +189,16 @@ if (fs.existsSync(path.join(ROOT, 'assets'))) {
   copied.push('assets/');
 }
 
+if (fs.existsSync(path.join(ROOT, 'zohoverify'))) {
+  fs.cpSync(path.join(ROOT, 'zohoverify'), path.join(OUT, 'zohoverify'), { recursive: true });
+  copied.push('zohoverify/');
+}
+
+if (fs.existsSync(path.join(ROOT, '.well-known'))) {
+  fs.cpSync(path.join(ROOT, '.well-known'), path.join(OUT, '.well-known'), { recursive: true });
+  copied.push('.well-known/');
+}
+
 if (includeAuthor && fs.existsSync(authorFile)) {
   copyFile('author-data.js');
   copied.push('author-data.js');
