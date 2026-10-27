@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+# scripts/build.mjs rewrites this file with the real sitemap URL.

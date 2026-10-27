@@ -1,0 +1,14 @@
+{
+  "provider": "google",
+  "port": 8787,
+  "google": {
+    "clientId": "REPLACE_WITH_GOOGLE_OAUTH_CLIENT_ID",
+    "clientSecret": "REPLACE_WITH_GOOGLE_OAUTH_CLIENT_SECRET",
+    "folderId": ""
+  },
+  "onedrive": {
+    "clientId": "REPLACE_WITH_MICROSOFT_APP_CLIENT_ID",
+    "tenant": "common",
+    "folder": "portfolio"
+  }
+}

@@ -1,0 +1,7 @@
+# Example only. Rename this file to CNAME (no extension) when you connect a
+# custom domain, and put the bare domain on a single line:
+#
+# girishbenni.com
+#
+# GitHub Pages reads the CNAME file automatically. Cloudflare Pages and Netlify
+# do not need it — set the domain in their dashboard instead.

@@ -1,0 +1,16 @@
+# Local secrets — never commit or upload these
+storage.config.json
+.storage-token.json
+.env
+.env.*
+
+# Author data — only create this when you are ready to publish your identity
+author-data.js
+
+# Local build output
+dist/
+
+# OS noise
+.DS_Store
+Thumbs.db
+desktop.ini

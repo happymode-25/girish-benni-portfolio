@@ -1,0 +1,2404 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="no-referrer">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0a0b0a">
+  <title>Storage Studio — local uploader</title>
+
+  <link rel="icon" href="assets/icons/favicon.svg" type="image/svg+xml">
+  <style>
+    /* Studio is intentionally self-contained: one HTML file, no extra JS or
+       CSS requests, so it can sit beside the portfolio without touching it. */
+
+    :root {
+      --bg: #0a0b0a;
+      --bg-soft: #0d0f0d;
+      --panel: #111411;
+      --panel-2: #161a16;
+      --ink: #eceee6;
+      --ink-soft: #c3c8bb;
+      --muted: #8d9487;
+      --faint: #7b8375;
+      --line: rgba(236, 238, 230, 0.11);
+      --line-strong: rgba(236, 238, 230, 0.22);
+      --accent: #c9f24f;
+      --accent-soft: rgba(201, 242, 79, 0.12);
+      --danger: #f08b72;
+      --danger-soft: rgba(240, 139, 114, 0.12);
+      --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, "Times New Roman", serif;
+      --sans: "Segoe UI Variable Text", "Segoe UI", -apple-system, BlinkMacSystemFont, Inter, system-ui, "Helvetica Neue", Arial, sans-serif;
+      --mono: "Cascadia Code", "Cascadia Mono", ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+      --gutter: clamp(18px, 4vw, 48px);
+      --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+      --fast: 0.18s;
+    }
+
+    /* Full reset — the studio does not load the portfolio stylesheet, so the
+       two pages can evolve independently without class-name collisions. */
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--ink-soft);
+      font-family: var(--sans);
+      font-size: 16px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(to right, rgba(236, 238, 230, 0.022) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(236, 238, 230, 0.022) 1px, transparent 1px);
+      background-size: 76px 76px;
+      mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.85), transparent 78%);
+      -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.85), transparent 78%);
+    }
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.03;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+    h1, h2, h3, p, ol, ul, figure { margin: 0; }
+    ul, ol { padding: 0; list-style: none; }
+    a { color: inherit; text-decoration: none; }
+    button { font: inherit; color: inherit; }
+    img, svg { display: block; max-width: 100%; }
+    [hidden] { display: none !important; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 1px; }
+    ::selection { background: var(--accent); color: #0b0c0a; }
+    * { scrollbar-width: thin; scrollbar-color: #3a4137 transparent; }
+    *::-webkit-scrollbar { width: 10px; height: 10px; }
+    *::-webkit-scrollbar-thumb { background: #333a31; border: 3px solid var(--bg); }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .skip-link {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      z-index: 200;
+      padding: 10px 16px;
+      background: var(--accent);
+      color: #0a0b0a;
+      font-family: var(--mono);
+      font-size: 12px;
+      transform: translateY(-160%);
+      transition: transform var(--fast) var(--ease);
+    }
+    .skip-link:focus { transform: none; }
+
+    .mono { font-family: var(--mono); }
+    .studio-wrap { width: 100%; max-width: 1240px; margin-inline: auto; padding-inline: var(--gutter); position: relative; z-index: 1; }
+
+    /* Top bar ------------------------------------------------------------- */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      border-bottom: 1px solid var(--line);
+      background: rgba(10, 11, 10, 0.88);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+    .topbar__inner {
+      min-height: 66px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+    .brand { display: inline-flex; align-items: center; gap: 13px; min-width: 0; }
+    .brand__mark {
+      width: 38px;
+      height: 38px;
+      flex: none;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--line-strong);
+      background: var(--panel);
+      font-family: var(--serif);
+      font-size: 14px;
+      letter-spacing: 0.02em;
+      color: var(--accent);
+    }
+    .brand__text { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
+    .brand__name { color: var(--ink); font-size: 14px; letter-spacing: 0.01em; }
+    .brand__sub {
+      font-family: var(--mono);
+      font-size: 9.5px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--faint);
+      margin-top: 4px;
+    }
+    .topbar__right { display: flex; align-items: center; gap: 8px; }
+    .local-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 10px;
+      border: 1px solid var(--line);
+      background: var(--bg-soft);
+      font-family: var(--mono);
+      font-size: 9.5px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .local-chip i {
+      width: 5px;
+      height: 5px;
+      flex: none;
+      background: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft);
+      border-radius: 50%;
+    }
+    .top-link {
+      padding: 9px 12px;
+      border: 1px solid transparent;
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      transition: color var(--fast) var(--ease), border-color var(--fast) var(--ease);
+    }
+    .top-link:hover { color: var(--ink); border-color: var(--line); }
+
+    /* Typography ---------------------------------------------------------- */
+    .kicker {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .kicker i {
+      width: 6px;
+      height: 6px;
+      flex: none;
+      background: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+    .serif { font-family: var(--serif); font-weight: 400; letter-spacing: -0.025em; color: var(--ink); }
+
+    /* Hero ---------------------------------------------------------------- */
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.55fr);
+      gap: clamp(28px, 6vw, 74px);
+      align-items: end;
+      padding: clamp(44px, 7vw, 82px) 0 clamp(34px, 4vw, 48px);
+    }
+    .hero h1 {
+      margin-top: 18px;
+      font-size: clamp(42px, 6.4vw, 78px);
+      line-height: 0.94;
+      letter-spacing: -0.045em;
+      max-width: 14ch;
+    }
+    .hero h1 em { font-style: italic; color: var(--accent); }
+    .hero__lede {
+      max-width: 58ch;
+      margin-top: 24px;
+      color: var(--muted);
+      font-size: clamp(15px, 1.5vw, 17px);
+      line-height: 1.7;
+    }
+    .hero__side {
+      border-top: 1px solid var(--line-strong);
+      padding-top: 16px;
+    }
+    .hero__side-label {
+      font-family: var(--mono);
+      font-size: 9.5px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--faint);
+    }
+    .steps { margin-top: 6px; }
+    .steps li {
+      display: grid;
+      grid-template-columns: 26px 1fr;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--line);
+      font-size: 13.5px;
+      color: var(--ink-soft);
+    }
+    .steps li span { font-family: var(--mono); font-size: 10px; color: var(--accent); padding-top: 3px; }
+    .hero__meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 20px;
+      margin-top: 20px;
+      font-family: var(--mono);
+      font-size: 9.5px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--faint);
+    }
+    .hero__meta span { display: inline-flex; align-items: center; gap: 7px; }
+    .hero__meta span::before { content: "/"; color: var(--accent); }
+
+    /* Banners ------------------------------------------------------------- */
+    .banner {
+      display: grid;
+      grid-template-columns: 34px minmax(0, 1fr) auto;
+      gap: 14px;
+      align-items: center;
+      margin-bottom: 20px;
+      padding: 16px 18px;
+      border: 1px solid rgba(201, 242, 79, 0.32);
+      background: var(--accent-soft);
+    }
+    .banner__icon {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(201, 242, 79, 0.4);
+      color: var(--accent);
+      font-family: var(--mono);
+      font-size: 14px;
+    }
+    .banner__title { color: var(--ink); font-size: 14px; }
+    .banner__text { color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+    .banner__text code, .code {
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 2px 5px;
+      border: 1px solid var(--line);
+      background: rgba(10, 11, 10, 0.45);
+      color: var(--ink-soft);
+    }
+    .banner.is-error { border-color: rgba(240, 139, 114, 0.38); background: var(--danger-soft); }
+    .banner.is-error .banner__icon { border-color: rgba(240, 139, 114, 0.5); color: var(--danger); }
+    .banner .mini { white-space: nowrap; }
+
+    /* Panels -------------------------------------------------------------- */
+    .panel {
+      position: relative;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(22, 26, 22, 0.7), rgba(13, 15, 13, 0.82));
+    }
+    .panel + .panel { margin-top: 22px; }
+    .panel__head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 14px;
+      padding: 19px 24px;
+      border-bottom: 1px solid var(--line);
+    }
+    .panel__title {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      flex-wrap: wrap;
+      font-family: var(--mono);
+      font-size: 10.5px;
+      font-weight: 400;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--ink);
+    }
+    .panel__index { color: var(--accent); }
+    .panel__sub {
+      font-family: var(--mono);
+      font-size: 9.5px;
+      letter-spacing: 0.08em;
+      text-transform: none;
+      color: var(--faint);
+    }
+    .panel__right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+    /* Buttons ------------------------------------------------------------- */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      min-height: 40px;
+      padding: 10px 16px;
+      border: 1px solid var(--line-strong);
+      border-radius: 1px;
+      background: transparent;
+      color: var(--ink);
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background var(--fast) var(--ease), border-color var(--fast) var(--ease),
+        color var(--fast) var(--ease), transform var(--fast) var(--ease), opacity var(--fast) var(--ease);
+    }
+    .btn:hover:not(:disabled) { background: rgba(236, 238, 230, 0.05); border-color: var(--ink-soft); transform: translateY(-1px); }
+    .btn:active:not(:disabled) { transform: translateY(0); }
+    .btn:disabled { opacity: 0.42; cursor: not-allowed; }
+    .btn--primary { background: var(--accent); border-color: var(--accent); color: #0b0c0a; font-weight: 600; }
+    .btn--primary:hover:not(:disabled) { background: #d7ff68; border-color: #d7ff68; color: #0b0c0a; }
+    .btn--danger:hover:not(:disabled) { background: var(--danger-soft); border-color: var(--danger); color: var(--danger); }
+    .btn .icon { width: 14px; height: 14px; flex: none; }
+
+    .mini {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      min-height: 28px;
+      padding: 5px 9px;
+      border: 1px solid var(--line);
+      border-radius: 1px;
+      background: transparent;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: color var(--fast) var(--ease), border-color var(--fast) var(--ease), background var(--fast) var(--ease);
+    }
+    .mini:hover:not(:disabled) { color: var(--ink); border-color: var(--line-strong); background: rgba(236, 238, 230, 0.04); }
+    .mini:disabled { opacity: 0.4; cursor: not-allowed; }
+    .mini.is-danger, .mini[data-armed="1"] { color: var(--danger); border-color: rgba(240, 139, 114, 0.45); }
+    .mini.is-copied { color: var(--accent); border-color: rgba(201, 242, 79, 0.45); }
+
+    .link-btn {
+      padding: 0;
+      border: 0;
+      border-bottom: 1px solid currentColor;
+      background: none;
+      color: var(--accent);
+      font: inherit;
+      cursor: pointer;
+    }
+    .link-btn:hover { color: #d7ff68; }
+
+    .segmented {
+      display: inline-flex;
+      gap: 4px;
+      padding: 4px;
+      border: 1px solid var(--line);
+      background: var(--bg-soft);
+    }
+    .segmented button {
+      min-height: 32px;
+      padding: 6px 13px;
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 9.5px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
+    }
+    .segmented button:hover { color: var(--ink); }
+    .segmented button[aria-pressed="true"] { background: var(--accent); color: #0b0c0a; font-weight: 600; }
+
+    /* Provider status ----------------------------------------------------- */
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      border-bottom: 1px solid var(--line);
+    }
+    .status-cell { padding: 18px 24px; border-right: 1px solid var(--line); min-width: 0; }
+    .status-cell:last-child { border-right: 0; }
+    .status-cell__label {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--faint);
+    }
+    .status-cell__dot { width: 5px; height: 5px; flex: none; border-radius: 50%; background: var(--faint); }
+    .status-cell__dot.is-on { background: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+    .status-cell__value {
+      margin-top: 7px;
+      color: var(--ink);
+      font-size: 15px;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+    .status-cell__note {
+      margin-top: 3px;
+      font-family: var(--mono);
+      font-size: 9.5px;
+      letter-spacing: 0.04em;
+      color: var(--faint);
+      overflow-wrap: anywhere;
+    }
+
+    /* Connect ------------------------------------------------------------- */
+    .connect {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 20px;
+      padding: 22px 24px;
+    }
+    .connect__copy { max-width: 66ch; min-width: 0; }
+    .connect__title {
+      font-family: var(--serif);
+      font-size: clamp(21px, 2.4vw, 27px);
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      margin-top: 6px;
+    }
+    .connect__text { margin-top: 7px; font-size: 13px; color: var(--muted); }
+    .connect__actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .connect__note { width: 100%; font-family: var(--mono); font-size: 9px; letter-spacing: 0.08em; color: var(--faint); text-align: right; }
+    .account-line { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .account-line strong { color: var(--ink); font-size: 13px; font-weight: 500; overflow-wrap: anywhere; }
+    .account-line span { font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+
+    .device {
+      margin: 0 24px 24px;
+      border: 1px dashed var(--line-strong);
+      background: var(--bg-soft);
+      padding: 20px;
+    }
+    .device__grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(180px, 0.72fr);
+      gap: 22px;
+      align-items: start;
+    }
+    .device__steps { counter-reset: d; display: grid; gap: 12px; }
+    .device__steps li {
+      counter-increment: d;
+      display: grid;
+      grid-template-columns: 22px minmax(0, 1fr);
+      gap: 9px;
+      font-size: 12.5px;
+      color: var(--muted);
+    }
+    .device__steps li::before {
+      content: counter(d, decimal-leading-zero);
+      font-family: var(--mono);
+      font-size: 9px;
+      color: var(--accent);
+      padding-top: 2px;
+    }
+    .device__code-box {
+      border: 1px solid var(--line-strong);
+      background: var(--panel);
+      padding: 14px 16px;
+      text-align: center;
+    }
+    .device__code-label {
+      font-family: var(--mono);
+      font-size: 8.5px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--faint);
+    }
+    .device__code {
+      margin: 7px 0 10px;
+      font-family: var(--mono);
+      font-size: clamp(23px, 3.2vw, 31px);
+      line-height: 1.1;
+      letter-spacing: 0.16em;
+      color: var(--accent);
+      overflow-wrap: anywhere;
+    }
+    .device__foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+    }
+    .device__note { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.03em; color: var(--faint); }
+    .device__note.is-error { color: var(--danger); }
+    .device__note.is-ok { color: var(--accent); }
+
+    .auth-message {
+      padding: 0 24px 20px;
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.03em;
+      color: var(--muted);
+    }
+    .auth-message.is-error { color: var(--danger); }
+    .auth-message.is-ok { color: var(--accent); }
+
+    /* Workspace ----------------------------------------------------------- */
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1.58fr) minmax(280px, 0.82fr);
+      gap: 22px;
+      margin-top: 22px;
+      align-items: start;
+    }
+
+    .upload { margin: 0; }
+    .drop {
+      position: relative;
+      margin: 22px 24px;
+      padding: clamp(26px, 5vw, 40px) 22px;
+      border: 1px dashed var(--line-strong);
+      background: rgba(10, 11, 10, 0.28);
+      text-align: center;
+      cursor: pointer;
+      transition: border-color var(--fast) var(--ease), background var(--fast) var(--ease), transform var(--fast) var(--ease);
+    }
+    .drop:hover { border-color: rgba(201, 242, 79, 0.38); background: rgba(201, 242, 79, 0.035); }
+    .drop.is-drag { border-color: var(--accent); background: var(--accent-soft); transform: translateY(-1px); }
+    .drop.is-locked { cursor: default; opacity: 0.62; }
+    .drop.is-locked:hover { border-color: var(--line-strong); background: rgba(10, 11, 10, 0.28); transform: none; }
+    .drop__mark {
+      width: 46px;
+      height: 46px;
+      margin: 0 auto 16px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--line-strong);
+      color: var(--accent);
+      background: var(--panel);
+    }
+    .drop__mark svg { width: 21px; height: 21px; }
+    .drop__title {
+      font-family: var(--serif);
+      font-size: clamp(22px, 2.6vw, 28px);
+      line-height: 1.15;
+      color: var(--ink);
+      letter-spacing: -0.02em;
+    }
+    .drop__meta {
+      margin-top: 8px;
+      font-family: var(--mono);
+      font-size: 9.5px;
+      letter-spacing: 0.06em;
+      color: var(--faint);
+    }
+    .drop__hint {
+      margin-top: 16px;
+      font-size: 12.5px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .queue-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 13px 24px;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      flex-wrap: wrap;
+    }
+    .queue-head__count {
+      font-family: var(--mono);
+      font-size: 9.5px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .queue { max-height: 460px; overflow-y: auto; }
+    .queue__item {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 14px;
+      align-items: start;
+      padding: 14px 24px;
+      border-bottom: 1px solid var(--line);
+    }
+    .queue__item:last-child { border-bottom: 0; }
+    .queue__top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+    .queue__name {
+      color: var(--ink);
+      font-size: 12.5px;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .queue__state {
+      flex: none;
+      font-family: var(--mono);
+      font-size: 8.5px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--faint);
+    }
+    .queue__state.is-uploading { color: var(--accent); }
+    .queue__state.is-done { color: var(--accent); }
+    .queue__state.is-error { color: var(--danger); }
+    .queue__meta {
+      margin-top: 3px;
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: 0.04em;
+      color: var(--faint);
+    }
+    .bar {
+      position: relative;
+      height: 2px;
+      margin-top: 9px;
+      background: var(--line);
+      overflow: hidden;
+    }
+    .bar span {
+      display: block;
+      height: 100%;
+      width: 0;
+      background: var(--accent);
+      transition: width 0.16s linear;
+    }
+    .bar.is-error span { background: var(--danger); }
+    .bar.is-done span { background: var(--accent); }
+    .queue__error { margin-top: 6px; font-size: 11.5px; color: var(--danger); overflow-wrap: anywhere; }
+    .queue__remove { align-self: center; }
+
+    .empty {
+      padding: 26px 24px;
+      font-size: 12.5px;
+      color: var(--faint);
+      line-height: 1.6;
+    }
+    .empty strong { display: block; color: var(--ink-soft); font-weight: 500; font-size: 13px; margin-bottom: 3px; }
+
+    /* Guide --------------------------------------------------------------- */
+    .guide { padding: 22px 24px; }
+    .guide h2 {
+      font-family: var(--serif);
+      font-size: 21px;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      margin-bottom: 6px;
+    }
+    .guide > p { font-size: 12.5px; color: var(--muted); margin-bottom: 14px; }
+    .guide ol { counter-reset: g; display: grid; gap: 14px; }
+    .guide ol li {
+      counter-increment: g;
+      display: grid;
+      grid-template-columns: 22px minmax(0, 1fr);
+      gap: 9px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+    .guide ol li::before {
+      content: counter(g);
+      font-family: var(--mono);
+      font-size: 9px;
+      color: var(--accent);
+      padding-top: 3px;
+    }
+    .guide li strong { display: block; color: var(--ink-soft); font-weight: 500; font-size: 12.5px; margin-bottom: 3px; }
+    .guide code {
+      display: inline-block;
+      margin: 3px 0;
+      padding: 2px 5px;
+      border: 1px solid var(--line);
+      background: var(--bg);
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--ink-soft);
+      overflow-wrap: anywhere;
+    }
+    .guide a { color: var(--accent); border-bottom: 1px solid rgba(201, 242, 79, 0.35); }
+    .guide a:hover { border-color: var(--accent); }
+    .guide details {
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+    }
+    .guide summary {
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 9.5px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .guide summary:hover { color: var(--accent); }
+    .guide details p { margin-top: 9px; font-size: 11.5px; line-height: 1.6; color: var(--faint); }
+    .guide details ul { margin-top: 8px; display: grid; gap: 6px; }
+    .guide details li {
+      position: relative;
+      padding-left: 13px;
+      font-size: 11.5px;
+      line-height: 1.55;
+      color: var(--faint);
+    }
+    .guide details li::before { content: "—"; position: absolute; left: 0; color: var(--accent); }
+
+    /* Results ------------------------------------------------------------- */
+    .results__list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .result {
+      display: grid;
+      grid-template-columns: 92px minmax(0, 1fr);
+      gap: 15px;
+      padding: 20px 24px;
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      min-width: 0;
+    }
+    .result:nth-child(2n) { border-right: 0; }
+    .result__thumb {
+      aspect-ratio: 1;
+      border: 1px solid var(--line);
+      background: var(--bg-soft);
+      overflow: hidden;
+      display: grid;
+      place-items: center;
+    }
+    .result__thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .result__type {
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: 0.08em;
+      color: var(--faint);
+      text-transform: uppercase;
+    }
+    .result__body { min-width: 0; }
+    .result__top { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+    .result__provider {
+      font-family: var(--mono);
+      font-size: 8.5px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .result__badge {
+      font-family: var(--mono);
+      font-size: 8px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--faint);
+      border: 1px solid var(--line);
+      padding: 2px 5px;
+    }
+    .result__badge.is-public { color: var(--accent); border-color: rgba(201, 242, 79, 0.3); }
+    .result__name {
+      margin-top: 5px;
+      font-size: 13.5px;
+      color: var(--ink);
+      overflow-wrap: anywhere;
+      line-height: 1.35;
+    }
+    .result__meta {
+      margin-top: 2px;
+      font-family: var(--mono);
+      font-size: 9px;
+      color: var(--faint);
+      overflow-wrap: anywhere;
+    }
+    .copy-row {
+      display: grid;
+      grid-template-columns: 64px minmax(0, 1fr) auto;
+      gap: 7px;
+      align-items: center;
+      margin-top: 7px;
+      padding: 6px 7px;
+      border: 1px solid var(--line);
+      background: rgba(10, 11, 10, 0.45);
+    }
+    .copy-row__label {
+      font-family: var(--mono);
+      font-size: 8px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--faint);
+    }
+    .copy-row code {
+      font-family: var(--mono);
+      font-size: 9.5px;
+      color: var(--ink-soft);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
+    }
+    .result__actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 9px; }
+    .result__actions .mini { text-decoration: none; }
+
+    /* Library ------------------------------------------------------------- */
+    .library__grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(228px, 1fr));
+    }
+    .file {
+      padding: 15px;
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      min-width: 0;
+      transition: background var(--fast) var(--ease);
+    }
+    .file:hover { background: rgba(236, 238, 230, 0.025); }
+    .file__thumb {
+      position: relative;
+      aspect-ratio: 16 / 10;
+      border: 1px solid var(--line);
+      background: var(--bg-soft);
+      overflow: hidden;
+      display: grid;
+      place-items: center;
+      margin-bottom: 11px;
+    }
+    .file__thumb img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s var(--ease); }
+    .file:hover .file__thumb img { transform: scale(1.025); }
+    .file__ext {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--faint);
+    }
+    .file__name {
+      font-size: 12px;
+      line-height: 1.4;
+      color: var(--ink-soft);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      min-height: 2.8em;
+      overflow-wrap: anywhere;
+    }
+    .file__meta {
+      margin-top: 3px;
+      font-family: var(--mono);
+      font-size: 8.5px;
+      letter-spacing: 0.03em;
+      color: var(--faint);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .file__actions { display: flex; gap: 5px; margin-top: 10px; flex-wrap: wrap; }
+    .file__actions .mini { padding: 4px 7px; font-size: 8px; }
+
+    /* Toast & footer ------------------------------------------------------ */
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 26px;
+      z-index: 120;
+      max-width: min(440px, calc(100vw - 32px));
+      padding: 11px 16px;
+      border: 1px solid var(--accent);
+      background: var(--accent);
+      color: #0b0c0a;
+      font-family: var(--mono);
+      font-size: 10.5px;
+      letter-spacing: 0.04em;
+      line-height: 1.45;
+      text-align: center;
+      opacity: 0;
+      pointer-events: none;
+      transform: translate(-50%, 14px);
+      transition: opacity var(--fast) var(--ease), transform var(--fast) var(--ease);
+    }
+    .toast.is-on { opacity: 1; transform: translate(-50%, 0); }
+    .toast.is-error { background: var(--danger); border-color: var(--danger); }
+
+    .site-foot {
+      margin-top: clamp(44px, 7vw, 80px);
+      border-top: 1px solid var(--line);
+    }
+    .foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 14px;
+      padding: 22px 0 34px;
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--faint);
+    }
+    .foot__mark { color: var(--accent); }
+    .foot__right { display: flex; gap: 18px; flex-wrap: wrap; }
+    .foot a:hover { color: var(--ink); }
+
+    /* Responsive ---------------------------------------------------------- */
+    @media (max-width: 1040px) {
+      .hero { grid-template-columns: 1fr; gap: 32px; align-items: start; }
+      .hero__side { max-width: 560px; }
+      .workspace { grid-template-columns: 1fr; }
+      .results__list { grid-template-columns: 1fr; }
+      .result:nth-child(2n) { border-right: 1px solid var(--line); }
+      .result { border-right: 0; }
+    }
+    @media (max-width: 760px) {
+      .brand__sub { display: none; }
+      .local-chip { display: none; }
+      .status-grid { grid-template-columns: 1fr; }
+      .status-cell { border-right: 0; border-bottom: 1px solid var(--line); padding: 15px 20px; }
+      .status-cell:last-child { border-bottom: 0; }
+      .panel__head { padding: 16px 20px; }
+      .connect { padding: 20px; }
+      .connect__actions { width: 100%; }
+      .connect__actions .btn { width: 100%; }
+      .connect__note { text-align: left; }
+      .device { margin: 0 20px 20px; padding: 16px; }
+      .device__grid { grid-template-columns: 1fr; }
+      .drop { margin: 18px 20px; }
+      .queue-head { padding: 12px 20px; }
+      .queue__item { padding: 13px 20px; }
+      .guide { padding: 20px; }
+      .result { grid-template-columns: 74px minmax(0, 1fr); padding: 16px 20px; }
+      .file__actions .mini { font-size: 8.5px; }
+    }
+    @media (max-width: 560px) {
+      .topbar__inner { min-height: 60px; }
+      .topbar__right .top-link:first-of-type { display: none; }
+      .hero { padding-top: 34px; }
+      .hero h1 { max-width: 100%; }
+      .hero__meta { display: grid; gap: 4px; }
+      .banner { grid-template-columns: 30px minmax(0, 1fr); align-items: start; padding: 14px; }
+      .banner .mini { grid-column: 2; justify-self: start; }
+      .panel__title { font-size: 10px; }
+      .segmented { width: 100%; }
+      .segmented button { flex: 1; padding-inline: 8px; }
+      .result { grid-template-columns: 1fr; }
+      .result__thumb { width: 100%; max-width: 190px; aspect-ratio: 16/10; }
+      .copy-row { grid-template-columns: 54px minmax(0, 1fr) auto; }
+      .foot { flex-direction: column; align-items: flex-start; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+      }
+      .file:hover .file__thumb img { transform: none; }
+      .btn:hover:not(:disabled), .drop.is-drag, .toast { transform: none; }
+      .toast { transform: translate(-50%, 0); }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="topbar">
+    <div class="studio-wrap topbar__inner">
+      <a class="brand" href="studio.html" aria-label="Storage Studio — reload">
+        <span class="brand__mark" aria-hidden="true">GB</span>
+        <span class="brand__text">
+          <span class="brand__name">Storage Studio</span>
+          <span class="brand__sub">Local upload utility</span>
+        </span>
+      </a>
+      <div class="topbar__right">
+        <span class="local-chip"><i aria-hidden="true"></i> Local only</span>
+        <a class="top-link" href="index.html">View site</a>
+        <a class="top-link" href="#setup">Setup</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <div class="studio-wrap">
+      <section class="hero" aria-labelledby="studio-title">
+        <div>
+          <p class="kicker"><i aria-hidden="true"></i> Upload once · reference anywhere</p>
+          <h1 class="serif" id="studio-title">Files in. Clean links <em>out.</em></h1>
+          <p class="hero__lede">
+            A local utility for putting images and documents into Google Drive or OneDrive,
+            then copying a link the portfolio understands. No build step, no secret keys in
+            the published site, no upload form for visitors.
+          </p>
+          <p class="hero__meta">
+            <span>OAuth device flow</span>
+            <span>Tokens stay on this machine</span>
+            <span>Google Drive &amp; OneDrive</span>
+          </p>
+        </div>
+        <aside class="hero__side" aria-label="How it works">
+          <p class="hero__side-label">The loop</p>
+          <ol class="steps">
+            <li><span>01</span><span>Connect the account you want to store files in.</span></li>
+            <li><span>02</span><span>Drop files here and wait for the upload to finish.</span></li>
+            <li><span>03</span><span>Copy the config value into <code class="code">script.js</code>.</span></li>
+          </ol>
+        </aside>
+      </section>
+
+      <div class="banner is-error" id="server-banner" role="alert" hidden>
+        <div class="banner__icon" aria-hidden="true">!</div>
+        <div>
+          <p class="banner__title">The storage server did not answer.</p>
+          <p class="banner__text">Check the terminal, then reload. Start it with <code>npm run studio</code>.</p>
+        </div>
+        <button class="mini" type="button" id="retry-health">Retry</button>
+      </div>
+
+      <div class="banner" id="config-banner" role="status" hidden>
+        <div class="banner__icon" aria-hidden="true">→</div>
+        <div>
+          <p class="banner__title">No <code>storage.config.json</code> yet.</p>
+          <p class="banner__text">Copy the example, add your OAuth credentials, then restart the studio. Nothing can upload until this exists.</p>
+        </div>
+        <button class="mini" type="button" id="copy-config-command">Copy command</button>
+      </div>
+
+      <!-- ============ PROVIDER + AUTH ============ -->
+      <section class="panel" id="setup" aria-labelledby="provider-title">
+        <div class="panel__head">
+          <h2 class="panel__title" id="provider-title">
+            <span class="panel__index">01</span>
+            Storage account
+            <span class="panel__sub" id="provider-sub">Google Drive</span>
+          </h2>
+          <div class="segmented" role="group" aria-label="Choose storage provider">
+            <button type="button" data-provider="google" aria-pressed="true">Google Drive</button>
+            <button type="button" data-provider="onedrive" aria-pressed="false">OneDrive</button>
+          </div>
+        </div>
+
+        <div class="status-grid">
+          <div class="status-cell">
+            <p class="status-cell__label"><span class="status-cell__dot" id="credentials-dot" aria-hidden="true"></span> Credentials</p>
+            <p class="status-cell__value" id="credentials-value">Checking…</p>
+            <p class="status-cell__note" id="credentials-note">storage.config.json</p>
+          </div>
+          <div class="status-cell">
+            <p class="status-cell__label"><span class="status-cell__dot" id="account-dot" aria-hidden="true"></span> Account</p>
+            <p class="status-cell__value" id="account-value">Not connected</p>
+            <p class="status-cell__note" id="account-note">Sign-in is stored locally</p>
+          </div>
+          <div class="status-cell">
+            <p class="status-cell__label"><span class="status-cell__dot is-on" aria-hidden="true"></span> Limit</p>
+            <p class="status-cell__value" id="limit-value">100 MB</p>
+            <p class="status-cell__note">Per file · links are public</p>
+          </div>
+        </div>
+
+        <div class="connect">
+          <div class="connect__copy">
+            <p class="kicker" id="connect-kicker">Connection</p>
+            <h3 class="connect__title" id="connect-title">Connect Google Drive</h3>
+            <p class="connect__text" id="connect-text">
+              Sign in once with a device code. The refresh token is written to
+              <code class="code">.storage-token.json</code> on this machine.
+            </p>
+          </div>
+
+          <div class="connect__actions" id="auth-disconnected">
+            <button class="btn btn--primary" type="button" id="connect-btn">Connect Google Drive</button>
+            <p class="connect__note" id="connect-note">No password is ever stored here.</p>
+          </div>
+
+          <div class="connect__actions" id="auth-connected" hidden>
+            <span class="account-line">
+              <strong id="connected-account">Connected</strong>
+              <span>Token on this machine</span>
+            </span>
+            <button class="mini btn--danger" type="button" id="signout-btn">Sign out</button>
+          </div>
+        </div>
+
+        <p class="auth-message" id="auth-message" role="status" aria-live="polite" hidden></p>
+
+        <div class="device" id="auth-device" hidden>
+          <div class="device__grid">
+            <ol class="device__steps">
+              <li>
+                <span>Open the verification page, sign in, and approve access for this app.
+                  <br><a class="link-btn" id="verify-link" href="https://www.google.com/device" target="_blank" rel="noopener noreferrer">Open verification page</a></span>
+              </li>
+              <li><span>Enter the code shown beside this list. It is not a password and expires shortly.</span></li>
+              <li><span>Keep this tab open. The page checks automatically until the account is connected.</span></li>
+            </ol>
+            <div class="device__code-box">
+              <p class="device__code-label">Device code</p>
+              <p class="device__code" id="device-code">————</p>
+              <button class="mini" type="button" id="copy-code">Copy code</button>
+            </div>
+          </div>
+          <div class="device__foot">
+            <p class="device__note" id="device-note">Waiting for approval…</p>
+            <button class="mini" type="button" id="cancel-auth">Cancel</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ UPLOAD + GUIDE ============ -->
+      <div class="workspace">
+        <section class="panel upload" aria-labelledby="upload-title">
+          <div class="panel__head">
+            <h2 class="panel__title" id="upload-title">
+              <span class="panel__index">02</span>
+              Upload
+              <span class="panel__sub" id="upload-provider">Google Drive</span>
+            </h2>
+            <div class="panel__right">
+              <span class="panel__sub" id="upload-state">Not connected</span>
+            </div>
+          </div>
+
+          <div class="drop is-locked" id="drop">
+            <div class="drop__mark" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
+                <path d="M12 16V4M7 9l5-5 5 5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M4 15v3.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V15" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <p class="drop__title">Drop files here</p>
+            <p class="drop__meta">Multiple files · images, PDFs, anything reasonable</p>
+            <p class="drop__hint">
+              Or <button class="link-btn" type="button" id="browse" disabled>choose files</button>
+              from this machine.
+              <br><span id="upload-hint">Connect an account above to enable uploads.</span>
+            </p>
+            <input class="sr-only" type="file" id="file-input" multiple tabindex="-1" aria-hidden="true">
+          </div>
+
+          <div class="queue-head" id="queue-head" hidden>
+            <p class="queue-head__count" id="queue-count" role="status" aria-live="polite">0 files</p>
+            <button class="mini" type="button" id="clear-finished">Clear finished</button>
+          </div>
+          <ol class="queue" id="queue" aria-label="Upload queue"></ol>
+        </section>
+
+        <aside class="panel" aria-labelledby="guide-title">
+          <div class="guide">
+            <p class="kicker">Before you start</p>
+            <h2 class="serif" id="guide-title">Two files, once.</h2>
+            <p>Credentials live in a local file that never ships with the site.</p>
+            <ol>
+              <li>
+                <span>
+                  <strong>Copy the example config</strong>
+                  <code>Copy-Item storage.config.example.json storage.config.json</code>
+                </span>
+              </li>
+              <li>
+                <span>
+                  <strong>Create an OAuth client</strong>
+                  Google: a “TVs and Limited Input devices” client. Microsoft: a public/native
+                  app with device-code flow. Paste the ids into the config.
+                </span>
+              </li>
+              <li>
+                <span>
+                  <strong>Restart the studio</strong>
+                  <code>npm run studio</code>
+                  Then connect above.
+                </span>
+              </li>
+            </ol>
+
+            <details>
+              <summary>Why a local server?</summary>
+              <p>
+                Google and Microsoft require an OAuth client secret for this flow. Putting it
+                in the portfolio's JavaScript would publish it. This server binds to
+                <code class="code">127.0.0.1</code>, keeps secrets in memory, and writes only
+                the refresh token to a gitignored file.
+              </p>
+              <ul>
+                <li>No analytics, no third-party scripts, no remote fonts.</li>
+                <li>Uploaded files are made publicly readable so the site can embed them.</li>
+                <li>Strip location and camera metadata before uploading anything personal.</li>
+                <li>Deleting here deletes the stored file; the site link will break.</li>
+                <li>Read <code class="code">docs/STORAGE.md</code> for the full setup.</li>
+              </ul>
+            </details>
+          </div>
+        </aside>
+      </div>
+
+      <!-- ============ RESULTS ============ -->
+      <section class="panel" id="results-panel" aria-labelledby="results-title" hidden>
+        <div class="panel__head">
+          <h2 class="panel__title" id="results-title">
+            <span class="panel__index">03</span>
+            Copy from here
+            <span class="panel__sub" id="results-count">0 uploaded</span>
+          </h2>
+          <div class="panel__right">
+            <button class="mini" type="button" id="clear-results">Clear view</button>
+          </div>
+        </div>
+        <div class="results__list" id="results-list"></div>
+      </section>
+
+      <!-- ============ LIBRARY ============ -->
+      <section class="panel" aria-labelledby="library-title">
+        <div class="panel__head">
+          <h2 class="panel__title" id="library-title">
+            <span class="panel__index">04</span>
+            Recent files
+            <span class="panel__sub" id="library-count">—</span>
+          </h2>
+          <div class="panel__right">
+            <button class="mini" type="button" id="refresh-library">Refresh</button>
+          </div>
+        </div>
+        <div class="library__grid" id="library"></div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site-foot">
+    <div class="studio-wrap foot">
+      <span><span class="foot__mark">GB</span> Storage Studio · runs on your machine</span>
+      <span class="foot__right">
+        <span>Tokens never leave this computer</span>
+        <a href="index.html">Portfolio</a>
+      </span>
+    </div>
+  </footer>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+  'use strict';
+
+  /* ========================================================================
+     Storage Studio — local UI
+     All requests go to the local server that served this page. Mutating calls
+     carry X-Studio: 1, which the server requires to block cross-site requests.
+     ===================================================================== */
+
+  const $ = (selector, root = document) => root.querySelector(selector);
+  const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
+
+  const LABELS = { google: 'Google Drive', onedrive: 'OneDrive' };
+  const STORAGE_KEYS = { provider: 'studio:provider' };
+
+  const state = {
+    provider: 'google',
+    health: null,
+    maxMb: 100,
+    authPending: false,
+    deviceCode: '',
+    pollTimer: 0,
+    pollBusy: false,
+    pollExpires: 0,
+    queue: [],
+    queueEls: new Map(),
+    uploading: false,
+    results: [],
+    files: [],
+    libraryLoading: false,
+    toastTimer: 0,
+  };
+
+  /* ----- Small helpers --------------------------------------------------- */
+  function h(tag, props = {}, ...children) {
+    const node = document.createElement(tag);
+    for (const [key, value] of Object.entries(props)) {
+      if (value == null || value === false) continue;
+      if (key === 'class') node.className = value;
+      else if (key === 'text') node.textContent = value;
+      else if (key === 'dataset') Object.assign(node.dataset, value);
+      else if (key === 'attrs') {
+        for (const [name, attrValue] of Object.entries(value)) {
+          if (attrValue == null || attrValue === false) continue;
+          node.setAttribute(name, attrValue === true ? '' : String(attrValue));
+        }
+      } else if (key.startsWith('on') && typeof value === 'function') {
+        node.addEventListener(key.slice(2).toLowerCase(), value);
+      } else {
+        node[key] = value;
+      }
+    }
+    for (const child of children.flat()) {
+      if (child == null || child === false) continue;
+      node.append(child.nodeType ? child : document.createTextNode(String(child)));
+    }
+    return node;
+  }
+
+  function toast(message, tone = 'ok') {
+    const node = $('#toast');
+    if (!node) return;
+    node.textContent = message;
+    node.classList.toggle('is-error', tone === 'error');
+    node.classList.add('is-on');
+    clearTimeout(state.toastTimer);
+    state.toastTimer = window.setTimeout(() => node.classList.remove('is-on'), tone === 'error' ? 6000 : 3200);
+  }
+
+  function safeHttp(value) {
+    try {
+      const url = new URL(value, window.location.href);
+      return /^https?:$/.test(url.protocol) ? url.href : '';
+    } catch (err) {
+      return '';
+    }
+  }
+
+  function formatBytes(bytes) {
+    const size = Number(bytes || 0);
+    if (!size) return '0 B';
+    if (size < 1024) return size + ' B';
+    const units = ['KB', 'MB', 'GB'];
+    let value = size / 1024;
+    let unit = 0;
+    while (value >= 1024 && unit < units.length - 1) {
+      value /= 1024;
+      unit += 1;
+    }
+    return (value >= 10 ? value.toFixed(0) : value.toFixed(1)) + ' ' + units[unit];
+  }
+
+  function formatDate(value) {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: 'numeric' }).format(date);
+  }
+
+  function extensionOf(name) {
+    const match = String(name || '').match(/\.([a-z0-9]{1,5})$/i);
+    return match ? match[1].toUpperCase() : 'FILE';
+  }
+
+  function isImage(mime, name) {
+    if (mime && String(mime).startsWith('image/')) return true;
+    return /\.(png|jpe?g|gif|webp|avif|svg)$/i.test(String(name || ''));
+  }
+
+  function providerInfo(key = state.provider) {
+    const found = (state.health && state.health.providers || []).find((item) => item.key === key);
+    return found || {
+      key,
+      label: LABELS[key] || key,
+      configured: false,
+      connected: false,
+      account: '',
+    };
+  }
+
+  function canUpload(key = state.provider) {
+    const info = providerInfo(key);
+    return Boolean(info.configured && info.connected);
+  }
+
+  async function api(path, options = {}) {
+    const method = options.method || 'GET';
+    const headers = Object.assign({}, options.headers);
+    const init = { method, headers, cache: 'no-store' };
+
+    if (method !== 'GET' && method !== 'HEAD') headers['X-Studio'] = '1';
+    if (options.body !== undefined) {
+      if (options.body instanceof FormData) {
+        init.body = options.body;
+      } else {
+        headers['content-type'] = 'application/json';
+        init.body = JSON.stringify(options.body);
+      }
+    }
+
+    const response = await fetch(path, init);
+    const text = await response.text();
+    let data = null;
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch (err) {
+      data = { error: text || 'Unexpected response.' };
+    }
+    if (!response.ok) {
+      const error = new Error((data && data.error) || response.status + ' ' + response.statusText);
+      error.status = response.status;
+      throw error;
+    }
+    return data;
+  }
+
+  /* ----- Clipboard ------------------------------------------------------- */
+  async function copyText(value, button) {
+    if (!value) return;
+    try {
+      await navigator.clipboard.writeText(value);
+    } catch (err) {
+      const area = document.createElement('textarea');
+      area.value = value;
+      area.setAttribute('readonly', '');
+      area.style.position = 'fixed';
+      area.style.top = '-1000px';
+      area.style.opacity = '0';
+      document.body.append(area);
+      area.select();
+      try {
+        document.execCommand('copy');
+      } catch (fallbackError) {
+        document.body.removeChild(area);
+        toast('Could not copy. Select the value manually.', 'error');
+        return;
+      }
+      document.body.removeChild(area);
+    }
+    toast('Copied to clipboard.');
+    if (button) {
+      const original = button.textContent;
+      button.textContent = 'Copied';
+      button.classList.add('is-copied');
+      window.setTimeout(() => {
+        button.textContent = original;
+        button.classList.remove('is-copied');
+      }, 1400);
+    }
+  }
+
+  document.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-copy]');
+    if (!button) return;
+    event.preventDefault();
+    copyText(button.dataset.copy, button);
+  });
+
+  /* ----- Health & provider state ----------------------------------------- */
+  async function loadHealth() {
+    try {
+      const data = await api('/api/health');
+      state.health = data;
+      state.maxMb = Number(data.maxUploadMb) || 100;
+      $('#server-banner').hidden = true;
+      $('#config-banner').hidden = Boolean(data.configFound);
+      renderProvider();
+      return true;
+    } catch (err) {
+      $('#server-banner').hidden = false;
+      return false;
+    }
+  }
+
+  function renderProvider() {
+    const info = providerInfo();
+    const label = info.label || LABELS[state.provider];
+    const configName = (state.health && state.health.configPath) || 'storage.config.json';
+
+    $('#provider-sub').textContent = label;
+    $('#upload-provider').textContent = label;
+    $('#connect-btn').textContent = 'Connect ' + label;
+    $('#connect-title').textContent = info.connected ? 'Connected to ' + label : 'Connect ' + label;
+    $('#connect-kicker').textContent = info.connected ? 'Active connection' : 'Connection';
+    $('#provider-title').setAttribute('aria-label', 'Storage account — ' + label);
+
+    /* Credentials */
+    const credentialsValue = $('#credentials-value');
+    const credentialsNote = $('#credentials-note');
+    const credentialsDot = $('#credentials-dot');
+    if (info.configured) {
+      credentialsValue.textContent = 'Configured';
+      credentialsNote.textContent = configName;
+      credentialsDot.classList.add('is-on');
+    } else {
+      credentialsValue.textContent = state.health && state.health.configFound ? 'Missing values' : 'No config file';
+      credentialsNote.textContent = configName;
+      credentialsDot.classList.remove('is-on');
+    }
+
+    /* Account */
+    const accountValue = $('#account-value');
+    const accountNote = $('#account-note');
+    const accountDot = $('#account-dot');
+    if (info.connected) {
+      accountValue.textContent = info.account || 'Connected';
+      accountNote.textContent = 'Sign-in stored locally';
+      accountDot.classList.add('is-on');
+    } else {
+      accountValue.textContent = 'Not connected';
+      accountNote.textContent = 'Click connect to sign in';
+      accountDot.classList.remove('is-on');
+    }
+
+    /* Limit */
+    $('#limit-value').textContent = state.maxMb + ' MB';
+
+    /* Auth blocks */
+    $('#auth-disconnected').hidden = Boolean(info.connected) || state.authPending;
+    $('#auth-connected').hidden = !info.connected;
+    $('#connect-btn').disabled = !info.configured || Boolean(info.connected) || state.authPending;
+    $('#connected-account').textContent = info.account || 'Connected';
+
+    const connectText = $('#connect-text');
+    if (info.connected) {
+      connectText.textContent = 'Uploads and the file list below come from this account. Sign out to remove the local token; revoke access in the provider account if you want a full disconnect.';
+    } else if (!info.configured) {
+      connectText.textContent = 'Add this provider’s OAuth credentials to storage.config.json, then restart the studio. The setup steps are in the panel below.';
+    } else {
+      connectText.textContent = 'Sign in once with a device code. The refresh token is written to .storage-token.json on this machine.';
+    }
+
+    const note = $('#connect-note');
+    if (info.connected) note.textContent = 'Token on this machine only.';
+    else if (!info.configured) note.textContent = 'Credentials missing — see setup.';
+    else note.textContent = 'No password is ever stored here.';
+
+    renderUploadAvailability();
+    if (!info.connected) {
+      state.files = [];
+      renderLibraryMessage('Not connected', 'Connect ' + label + ' above to list recent files.');
+    }
+  }
+
+  function renderUploadAvailability() {
+    const info = providerInfo();
+    const enabled = Boolean(info.configured && info.connected);
+    const drop = $('#drop');
+    const browse = $('#browse');
+
+    browse.disabled = !enabled;
+    drop.classList.toggle('is-locked', !enabled);
+    $('#upload-state').textContent = enabled ? 'Ready' : info.connected ? 'Not uploadable' : 'Not connected';
+
+    let hint;
+    if (enabled) {
+      hint = 'Uploads go to ' + info.label + ' · ' + state.maxMb + ' MB per file · public links are created.';
+    } else if (!info.configured) {
+      hint = 'Credentials are missing. See “Two files, once.” below.';
+    } else {
+      hint = 'Connect ' + info.label + ' above to enable uploads.';
+    }
+    $('#upload-hint').textContent = hint;
+  }
+
+  function setProvider(key) {
+    if (!LABELS[key] || key === state.provider) return;
+    stopPolling();
+    state.authPending = false;
+    resetDeviceUI();
+    state.provider = key;
+    try { localStorage.setItem(STORAGE_KEYS.provider, key); } catch (err) { /* ignore */ }
+    $$('[data-provider]').forEach((button) => {
+      button.setAttribute('aria-pressed', String(button.dataset.provider === key));
+    });
+    $('#auth-message').hidden = true;
+    renderProvider();
+    loadFiles();
+  }
+
+  $$('[data-provider]').forEach((button) => {
+    button.addEventListener('click', () => setProvider(button.dataset.provider));
+  });
+
+  /* ----- Device-code auth ----------------------------------------------- */
+  function setAuthMessage(text, tone) {
+    const node = $('#auth-message');
+    if (!text) {
+      node.hidden = true;
+      node.textContent = '';
+      node.className = 'auth-message';
+      return;
+    }
+    node.hidden = false;
+    node.textContent = text;
+    node.className = 'auth-message' + (tone ? ' is-' + tone : '');
+  }
+
+  function setDeviceNote(text, tone) {
+    const node = $('#device-note');
+    node.textContent = text;
+    node.className = 'device__note' + (tone ? ' is-' + tone : '');
+  }
+
+  function resetDeviceUI() {
+    $('#auth-device').hidden = true;
+    $('#device-code').textContent = '————';
+    $('#device-note').textContent = 'Waiting for approval…';
+    $('#device-note').className = 'device__note';
+    state.deviceCode = '';
+  }
+
+  function stopPolling() {
+    if (state.pollTimer) {
+      clearTimeout(state.pollTimer);
+      state.pollTimer = 0;
+    }
+    state.pollBusy = false;
+    state.deviceCode = '';
+    state.pollExpires = 0;
+  }
+
+  async function startAuth() {
+    const info = providerInfo();
+    if (!info.configured) {
+      setAuthMessage('Add credentials to storage.config.json and restart the studio.', 'error');
+      return;
+    }
+    stopPolling();
+    setAuthMessage('');
+    state.authPending = true;
+    const button = $('#connect-btn');
+    button.disabled = true;
+    const label = button.textContent;
+    button.textContent = 'Starting…';
+
+    try {
+      const data = await api('/api/auth/start', {
+        method: 'POST',
+        body: { provider: state.provider },
+      });
+
+      state.deviceCode = data.deviceCode;
+      state.pollExpires = Date.now() + (Number(data.expiresIn) || 900) * 1000;
+
+      $('#device-code').textContent = data.userCode;
+      const verification = safeHttp(data.verificationUrl);
+      if (verification) $('#verify-link').href = verification;
+      $('#auth-device').hidden = false;
+      setDeviceNote('Waiting for approval. This page checks automatically.', '');
+      setAuthMessage('A sign-in code is ready. Approve it in the other tab.', 'ok');
+      const motion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      $('#auth-device').scrollIntoView({ behavior: motion ? 'auto' : 'smooth', block: 'nearest' });
+      renderProvider();
+      $('#verify-link').focus({ preventScroll: true });
+
+      schedulePoll(Number(data.interval) || 5);
+    } catch (err) {
+      state.authPending = false;
+      setAuthMessage(err.message || 'Could not start sign-in.', 'error');
+      resetDeviceUI();
+      renderProvider();
+    } finally {
+      const current = providerInfo();
+      button.textContent = label;
+      button.disabled = !current.configured || Boolean(current.connected) || state.authPending;
+    }
+  }
+
+  function schedulePoll(seconds) {
+    const interval = Math.max(3, Number(seconds) || 5);
+    state.pollTimer = window.setTimeout(() => pollAuth(interval), interval * 1000);
+  }
+
+  async function pollAuth(interval) {
+    if (state.pollBusy || !state.deviceCode) return;
+    if (state.pollExpires && Date.now() > state.pollExpires) {
+      stopPolling();
+      state.authPending = false;
+      resetDeviceUI();
+      setAuthMessage('The sign-in code expired before it was approved.', 'error');
+      renderProvider();
+      return;
+    }
+
+    const provider = state.provider;
+    const deviceCode = state.deviceCode;
+    state.pollBusy = true;
+
+    try {
+      const data = await api('/api/auth/poll', {
+        method: 'POST',
+        body: { provider, deviceCode },
+      });
+
+      if (provider !== state.provider || deviceCode !== state.deviceCode) return;
+
+      if (data.status === 'pending') {
+        setDeviceNote('Still waiting for approval…');
+        schedulePoll(interval);
+      } else if (data.status === 'slow_down') {
+        setDeviceNote('The provider asked for a slower check. Waiting a little longer…');
+        schedulePoll(interval + 5);
+      } else if (data.status === 'complete') {
+        stopPolling();
+        state.authPending = false;
+        resetDeviceUI();
+        setAuthMessage('Connected' + (data.account ? ' as ' + data.account : '') + '.', 'ok');
+        toast('Connected to ' + LABELS[provider] + '.');
+        await loadHealth();
+        renderProvider();
+        loadFiles();
+      } else {
+        setDeviceNote('Unexpected response. Try again.', 'error');
+      }
+    } catch (err) {
+      if (provider !== state.provider) return;
+      stopPolling();
+      state.authPending = false;
+      resetDeviceUI();
+      setAuthMessage(err.message || 'Sign-in failed.', 'error');
+      renderProvider();
+      toast(err.message || 'Sign-in failed.', 'error');
+    } finally {
+      state.pollBusy = false;
+    }
+  }
+
+  async function signOut() {
+    stopPolling();
+    state.authPending = false;
+    resetDeviceUI();
+    const provider = state.provider;
+    try {
+      await api('/api/auth/signout', { method: 'POST', body: { provider } });
+      setAuthMessage('Signed out. The local token was removed for ' + LABELS[provider] + '.', 'ok');
+      toast('Signed out.');
+      await loadHealth();
+      renderProvider();
+      loadFiles();
+    } catch (err) {
+      setAuthMessage(err.message || 'Could not sign out.', 'error');
+    }
+  }
+
+  $('#connect-btn').addEventListener('click', startAuth);
+  $('#signout-btn').addEventListener('click', signOut);
+  $('#cancel-auth').addEventListener('click', () => {
+    stopPolling();
+    state.authPending = false;
+    resetDeviceUI();
+    setAuthMessage('Sign-in cancelled.');
+    renderProvider();
+    $('#connect-btn').focus({ preventScroll: true });
+  });
+  $('#copy-code').addEventListener('click', (event) => {
+    copyText($('#device-code').textContent.trim(), event.currentTarget);
+  });
+
+  /* ----- Upload queue ---------------------------------------------------- */
+  function makeId() {
+    if (window.crypto && typeof window.crypto.randomUUID === 'function') return window.crypto.randomUUID();
+    return 'q-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+  }
+
+  function addFiles(fileList) {
+    const incoming = Array.from(fileList || []);
+    if (!incoming.length) return;
+
+    if (!canUpload()) {
+      toast('Connect ' + providerInfo().label + ' before uploading.', 'error');
+      return;
+    }
+
+    const limit = state.maxMb * 1024 * 1024;
+    for (const file of incoming) {
+      const item = {
+        id: makeId(),
+        file,
+        provider: state.provider,
+        status: 'queued',
+        progress: 0,
+        error: '',
+      };
+      if (!file.size) {
+        item.status = 'error';
+        item.error = 'The file is empty.';
+      } else if (file.size > limit) {
+        item.status = 'error';
+        item.error = 'Larger than the ' + state.maxMb + ' MB limit.';
+      }
+      state.queue.push(item);
+    }
+
+    renderQueue();
+    pumpQueue();
+  }
+
+  function renderQueue() {
+    const list = $('#queue');
+    const head = $('#queue-head');
+    state.queueEls.clear();
+    list.textContent = '';
+
+    if (!state.queue.length) {
+      head.hidden = true;
+      $('#queue-count').textContent = '0 files';
+      return;
+    }
+
+    head.hidden = false;
+    const fragment = document.createDocumentFragment();
+
+    for (const item of state.queue) {
+      const name = item.file ? item.file.name : 'File';
+      const type = item.file && item.file.type ? item.file.type : extensionOf(name);
+      const size = item.file ? formatBytes(item.file.size) : '';
+
+      const stateLabel = h('span', { class: 'queue__state', text: 'Queued' });
+      const barFill = h('span');
+      const bar = h('div', {
+        class: 'bar',
+        attrs: {
+          role: 'progressbar',
+          'aria-label': 'Upload progress for ' + name,
+          'aria-valuemin': '0',
+          'aria-valuemax': '100',
+          'aria-valuenow': '0',
+        },
+      }, barFill);
+      const error = h('p', { class: 'queue__error', hidden: true });
+      const remove = h('button', {
+        class: 'mini queue__remove',
+        type: 'button',
+        text: 'Remove',
+        attrs: { 'aria-label': 'Remove ' + name + ' from the upload list' },
+      });
+      remove.addEventListener('click', () => removeQueueItem(item.id));
+
+      const node = h('li', { class: 'queue__item', dataset: { id: item.id } },
+        h('div', {},
+          h('div', { class: 'queue__top' },
+            h('p', { class: 'queue__name', text: name, title: name }),
+            stateLabel
+          ),
+          h('p', { class: 'queue__meta', text: size + ' · ' + type }),
+          bar,
+          error
+        ),
+        remove
+      );
+
+      state.queueEls.set(item.id, { node, stateLabel, bar, barFill, error, remove });
+      updateQueueItem(item);
+      fragment.append(node);
+    }
+
+    list.append(fragment);
+    renderQueueSummary();
+  }
+
+  function renderQueueSummary() {
+    const total = state.queue.length;
+    const done = state.queue.filter((item) => item.status === 'done').length;
+    const failed = state.queue.filter((item) => item.status === 'error').length;
+    const uploading = state.queue.some((item) => item.status === 'uploading');
+    const parts = [total + (total === 1 ? ' file' : ' files')];
+    if (done) parts.push(done + ' uploaded');
+    if (failed) parts.push(failed + ' failed');
+    if (uploading) parts.push('uploading');
+    $('#queue-count').textContent = parts.join(' · ');
+    $('#clear-finished').hidden = !done && !failed;
+  }
+
+  function updateQueueItem(item) {
+    const refs = state.queueEls.get(item.id);
+    if (!refs) return;
+
+    const pct = Math.max(0, Math.min(100, Math.round(item.progress || 0)));
+    refs.bar.setAttribute('aria-valuenow', String(pct));
+    refs.barFill.style.width = pct + '%';
+    refs.bar.classList.toggle('is-error', item.status === 'error');
+    refs.bar.classList.toggle('is-done', item.status === 'done');
+    refs.bar.hidden = item.status === 'error';
+
+    let label = 'Queued';
+    if (item.status === 'uploading') label = pct + '%';
+    if (item.status === 'done') label = 'Uploaded';
+    if (item.status === 'error') label = 'Failed';
+    refs.stateLabel.textContent = label;
+    refs.stateLabel.className = 'queue__state is-' + item.status;
+
+    if (item.error) {
+      refs.error.hidden = false;
+      refs.error.textContent = item.error;
+    } else {
+      refs.error.hidden = true;
+      refs.error.textContent = '';
+    }
+
+    refs.remove.disabled = item.status === 'uploading';
+    refs.remove.hidden = item.status === 'uploading';
+  }
+
+  function removeQueueItem(id) {
+    const item = state.queue.find((entry) => entry.id === id);
+    if (!item || item.status === 'uploading') return;
+    state.queue = state.queue.filter((entry) => entry.id !== id);
+    renderQueue();
+  }
+
+  async function pumpQueue() {
+    if (state.uploading) return;
+    state.uploading = true;
+    const uploadedProviders = new Set();
+
+    try {
+      for (const item of state.queue) {
+        if (!state.queue.includes(item)) continue;
+        if (item.status !== 'queued') continue;
+        item.status = 'uploading';
+        item.progress = 0;
+        item.error = '';
+        updateQueueItem(item);
+        renderQueueSummary();
+
+        try {
+          const data = await uploadFile(item.file, item.provider, (pct) => {
+            item.progress = pct;
+            updateQueueItem(item);
+          });
+          item.status = 'done';
+          item.progress = 100;
+          item.error = '';
+          uploadedProviders.add(item.provider);
+          addResult(data, item.provider);
+          updateQueueItem(item);
+          renderQueueSummary();
+          toast('Uploaded ' + item.file.name + '.');
+        } catch (err) {
+          item.status = 'error';
+          item.error = err.message || 'Upload failed.';
+          updateQueueItem(item);
+          renderQueueSummary();
+          toast('Upload failed for ' + item.file.name + '.', 'error');
+        }
+      }
+    } finally {
+      state.uploading = false;
+      renderQueueSummary();
+      if (uploadedProviders.has(state.provider)) loadFiles({ quiet: true });
+    }
+  }
+
+  function uploadFile(file, provider, onProgress) {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', '/api/upload?provider=' + encodeURIComponent(provider));
+      xhr.setRequestHeader('X-Studio', '1');
+      xhr.responseType = 'text';
+
+      xhr.upload.addEventListener('progress', (event) => {
+        if (event.lengthComputable) onProgress((event.loaded / event.total) * 100);
+      });
+
+      xhr.addEventListener('load', () => {
+        let data = null;
+        try {
+          data = xhr.responseText ? JSON.parse(xhr.responseText) : null;
+        } catch (err) {
+          data = { error: 'The server returned an unreadable response.' };
+        }
+        if (xhr.status >= 200 && xhr.status < 300 && data && data.ok) resolve(data);
+        else reject(new Error((data && data.error) || 'Upload failed (' + xhr.status + ').'));
+      });
+
+      xhr.addEventListener('error', () => reject(new Error('Network error while uploading.')));
+      xhr.addEventListener('abort', () => reject(new Error('Upload cancelled.')));
+
+      const form = new FormData();
+      form.append('provider', provider);
+      form.append('file', file, file.name);
+      xhr.send(form);
+    });
+  }
+
+  /* ----- Results --------------------------------------------------------- */
+  function addResult(data, provider) {
+    state.results.unshift({
+      id: data.id || makeId(),
+      provider,
+      name: data.name || 'Uploaded file',
+      size: Number(data.size) || 0,
+      mime: data.mime || '',
+      public: Boolean(data.public),
+      webUrl: safeHttp(data.webUrl),
+      directUrl: safeHttp(data.directUrl),
+      downloadUrl: safeHttp(data.downloadUrl),
+      configValue: data.configValue || '',
+      markdown: data.markdown || '',
+    });
+    renderResults();
+  }
+
+  function copyRow(label, value) {
+    if (!value) return null;
+    return h('div', { class: 'copy-row' },
+      h('span', { class: 'copy-row__label', text: label }),
+      h('code', { text: value, title: value }),
+      h('button', {
+        class: 'mini',
+        type: 'button',
+        text: 'Copy',
+        dataset: { copy: value },
+        attrs: { 'aria-label': 'Copy ' + label.toLowerCase() + ' for ' + value },
+      })
+    );
+  }
+
+  function renderResults() {
+    const panel = $('#results-panel');
+    const list = $('#results-list');
+    list.textContent = '';
+    panel.hidden = state.results.length === 0;
+    $('#results-count').textContent = state.results.length + ' uploaded';
+    if (!state.results.length) return;
+
+    const fragment = document.createDocumentFragment();
+
+    for (const item of state.results) {
+      const image = isImage(item.mime, item.name);
+      const thumb = h('div', { class: 'result__thumb' });
+      if (image && item.directUrl) {
+        const img = h('img', {
+          src: item.directUrl,
+          alt: '',
+          loading: 'lazy',
+          attrs: { referrerpolicy: 'no-referrer' },
+        });
+        img.addEventListener('error', () => {
+          thumb.textContent = '';
+          thumb.append(h('span', { class: 'result__type', text: extensionOf(item.name) }));
+        });
+        thumb.append(img);
+      } else {
+        thumb.append(h('span', { class: 'result__type', text: extensionOf(item.name) }));
+      }
+
+      const copyRows = h('div', {},
+        copyRow('Config', item.configValue),
+        copyRow('URL', item.directUrl || item.webUrl),
+        image ? copyRow('Markdown', item.markdown) : null
+      );
+
+      const actions = h('div', { class: 'result__actions' });
+      if (item.webUrl) {
+        actions.append(h('a', {
+          class: 'mini',
+          href: item.webUrl,
+          text: 'Open',
+          target: '_blank',
+          rel: 'noopener noreferrer',
+        }));
+      }
+      if (item.downloadUrl) {
+        actions.append(h('a', {
+          class: 'mini',
+          href: item.downloadUrl,
+          text: 'Download',
+          target: '_blank',
+          rel: 'noopener noreferrer',
+        }));
+      }
+
+      const card = h('article', { class: 'result' },
+        thumb,
+        h('div', { class: 'result__body' },
+          h('div', { class: 'result__top' },
+            h('span', { class: 'result__provider', text: LABELS[item.provider] || item.provider }),
+            h('span', {
+              class: 'result__badge' + (item.public ? ' is-public' : ''),
+              text: item.public ? 'Public' : 'Check access',
+            })
+          ),
+          h('p', { class: 'result__name', text: item.name, title: item.name }),
+          h('p', { class: 'result__meta', text: formatBytes(item.size) + (item.mime ? ' · ' + item.mime : '') }),
+          copyRows,
+          actions
+        )
+      );
+      fragment.append(card);
+    }
+
+    list.append(fragment);
+  }
+
+  $('#clear-results').addEventListener('click', () => {
+    if (!state.results.length) return;
+    state.results = [];
+    renderResults();
+    toast('Cleared from this view. Files remain in storage.');
+  });
+
+  /* ----- Library --------------------------------------------------------- */
+  function renderLibraryMessage(title, text) {
+    const library = $('#library');
+    library.textContent = '';
+    library.append(h('div', { class: 'empty' },
+      h('strong', { text: title }),
+      text
+    ));
+    $('#library-count').textContent = '—';
+  }
+
+  function setLibraryLoading(loading) {
+    state.libraryLoading = loading;
+    const button = $('#refresh-library');
+    button.disabled = loading;
+    button.textContent = loading ? 'Loading…' : 'Refresh';
+    button.setAttribute('aria-busy', String(loading));
+  }
+
+  async function loadFiles(options = {}) {
+    const provider = state.provider;
+    const info = providerInfo(provider);
+    if (!info.configured) {
+      renderLibraryMessage('Credentials missing', 'Add ' + info.label + ' credentials to storage.config.json and restart the studio.');
+      return;
+    }
+    if (!info.connected) {
+      renderLibraryMessage('Not connected', 'Connect ' + info.label + ' above to list files stored by this tool.');
+      return;
+    }
+
+    if (!options.quiet) setLibraryLoading(true);
+    try {
+      const data = await api('/api/files?provider=' + encodeURIComponent(provider), {
+        headers: { 'X-Studio': '1' },
+      });
+      if (provider !== state.provider) return;
+      state.files = Array.isArray(data.files) ? data.files : [];
+      renderFiles();
+    } catch (err) {
+      if (provider !== state.provider) return;
+      renderLibraryMessage('Could not load files', err.message || 'Try refreshing.');
+      if (!options.quiet) toast(err.message || 'Could not load files.', 'error');
+    } finally {
+      if (provider === state.provider) setLibraryLoading(false);
+    }
+  }
+
+  function configValueFor(item) {
+    if (state.provider === 'google' && isImage(item.mime, item.name) && item.id) return 'drive:' + item.id;
+    return item.webUrl || item.downloadUrl || '';
+  }
+
+  function renderFiles() {
+    const library = $('#library');
+    library.textContent = '';
+    const items = state.files;
+    $('#library-count').textContent = items.length + (items.length === 1 ? ' file' : ' files');
+
+    if (!items.length) {
+      library.append(h('div', { class: 'empty' },
+        h('strong', { text: 'No files here yet.' }),
+        'Upload one above; it will appear in this list with copy-ready values.'
+      ));
+      return;
+    }
+
+    const fragment = document.createDocumentFragment();
+
+    for (const item of items) {
+      const image = isImage(item.mime, item.name);
+      const imageUrl = image ? safeHttp(item.thumbnail || item.directUrl) : '';
+      const thumb = h('div', { class: 'file__thumb' });
+      if (imageUrl) {
+        const img = h('img', {
+          src: imageUrl,
+          alt: '',
+          loading: 'lazy',
+          attrs: { referrerpolicy: 'no-referrer' },
+        });
+        img.addEventListener('error', () => {
+          thumb.textContent = '';
+          thumb.append(h('span', { class: 'file__ext', text: extensionOf(item.name) }));
+        });
+        thumb.append(img);
+      } else {
+        thumb.append(h('span', { class: 'file__ext', text: extensionOf(item.name) }));
+      }
+
+      const value = configValueFor(item);
+      const actions = h('div', { class: 'file__actions' });
+      const web = safeHttp(item.webUrl);
+      if (web) {
+        actions.append(h('a', {
+          class: 'mini',
+          href: web,
+          text: 'Open',
+          target: '_blank',
+          rel: 'noopener noreferrer',
+        }));
+      }
+      if (value) {
+        actions.append(h('button', {
+          class: 'mini',
+          type: 'button',
+          text: 'Copy value',
+          dataset: { copy: value },
+          attrs: { 'aria-label': 'Copy config value for ' + item.name },
+        }));
+      }
+
+      const remove = h('button', {
+        class: 'mini btn--danger',
+        type: 'button',
+        text: 'Delete',
+        attrs: { 'aria-label': 'Delete ' + item.name + ' from ' + providerInfo().label },
+      });
+      remove.addEventListener('click', () => {
+        if (remove.dataset.armed !== '1') {
+          remove.dataset.armed = '1';
+          remove.classList.add('is-danger');
+          remove.textContent = 'Confirm?';
+          remove.setAttribute('aria-label', 'Click again to delete ' + item.name);
+          window.setTimeout(() => {
+            if (!remove.isConnected) return;
+            remove.dataset.armed = '';
+            remove.classList.remove('is-danger');
+            remove.textContent = 'Delete';
+            remove.setAttribute('aria-label', 'Delete ' + item.name);
+          }, 4500);
+          return;
+        }
+        removeFile(item, remove);
+      });
+      actions.append(remove);
+
+      const card = h('article', { class: 'file' },
+        thumb,
+        h('p', { class: 'file__name', text: item.name, title: item.name }),
+        h('p', {
+          class: 'file__meta',
+          text: [formatBytes(item.size), formatDate(item.created)].filter(Boolean).join(' · '),
+        }),
+        actions
+      );
+      fragment.append(card);
+    }
+
+    library.append(fragment);
+  }
+
+  async function removeFile(item, button) {
+    const provider = state.provider;
+    button.disabled = true;
+    button.textContent = 'Deleting…';
+    try {
+      await api('/api/files/' + encodeURIComponent(item.id) + '?provider=' + encodeURIComponent(provider), {
+        method: 'DELETE',
+      });
+      state.files = state.files.filter((entry) => entry.id !== item.id);
+      state.results = state.results.filter((entry) => entry.id !== item.id);
+      renderResults();
+      renderFiles();
+      toast('Deleted ' + item.name + ' from ' + (LABELS[provider] || provider) + '.');
+    } catch (err) {
+      button.disabled = false;
+      button.textContent = 'Delete';
+      button.dataset.armed = '';
+      button.classList.remove('is-danger');
+      toast(err.message || 'Could not delete the file.', 'error');
+    }
+  }
+
+  $('#refresh-library').addEventListener('click', () => loadFiles());
+  $('#retry-health').addEventListener('click', async () => {
+    const ok = await loadHealth();
+    if (ok) {
+      renderProvider();
+      loadFiles();
+    }
+  });
+
+  /* ----- Drop zone ------------------------------------------------------- */
+  $('#browse').addEventListener('click', (event) => {
+    event.stopPropagation();
+    if (!canUpload()) {
+      toast('Connect ' + providerInfo().label + ' before uploading.', 'error');
+      return;
+    }
+    $('#file-input').click();
+  });
+
+  $('#file-input').addEventListener('change', (event) => {
+    addFiles(event.target.files);
+    event.target.value = '';
+  });
+
+  const drop = $('#drop');
+  drop.addEventListener('click', (event) => {
+    if (event.target.closest('button, a')) return;
+    if (!canUpload()) return;
+    $('#file-input').click();
+  });
+
+  drop.addEventListener('dragenter', (event) => {
+    event.preventDefault();
+    if (!canUpload()) return;
+    drop.classList.add('is-drag');
+  });
+  drop.addEventListener('dragover', (event) => {
+    event.preventDefault();
+    if (!canUpload()) return;
+    drop.classList.add('is-drag');
+  });
+  drop.addEventListener('dragleave', (event) => {
+    if (drop.contains(event.relatedTarget)) return;
+    drop.classList.remove('is-drag');
+  });
+  drop.addEventListener('drop', (event) => {
+    event.preventDefault();
+    drop.classList.remove('is-drag');
+    if (!canUpload()) {
+      toast('Connect ' + providerInfo().label + ' before uploading.', 'error');
+      return;
+    }
+    addFiles(event.dataTransfer && event.dataTransfer.files);
+  });
+
+  $('#clear-finished').addEventListener('click', () => {
+    state.queue = state.queue.filter((item) => item.status !== 'done' && item.status !== 'error');
+    renderQueue();
+  });
+
+  $('#copy-config-command').addEventListener('click', (event) => {
+    copyText('Copy-Item storage.config.example.json storage.config.json', event.currentTarget);
+  });
+
+  /* ----- Boot ------------------------------------------------------------ */
+  (function boot() {
+    let saved = '';
+    try { saved = localStorage.getItem(STORAGE_KEYS.provider) || ''; } catch (err) { /* ignore */ }
+
+    const query = new URLSearchParams(window.location.search).get('provider');
+    if (LABELS[query]) state.provider = query;
+    else if (LABELS[saved]) state.provider = saved;
+
+    $$('[data-provider]').forEach((button) => {
+      button.setAttribute('aria-pressed', String(button.dataset.provider === state.provider));
+    });
+
+    renderProvider();
+    loadHealth().then((ok) => {
+      if (ok) {
+        renderProvider();
+        loadFiles();
+      }
+    });
+  })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script>document.documentElement.classList.replace('no-js', 'js');</script>
+
+  <title>Girish Benni — portfolio</title>
+  <meta name="description" content="Girish Benni — a working portfolio of software projects, security labs, AI experiments, open-source work, and writing.">
+  <meta name="author" content="Girish Benni">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0a0b0a">
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Girish Benni — portfolio">
+  <meta property="og:description" content="A working record of software, security, AI experiments, and writing.">
+  <meta property="og:image" content="assets/images/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="icon" href="assets/icons/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/icons/favicon.svg">
+  <link rel="stylesheet" href="style.css">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    "name": "Girish Benni"
+  }
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div class="scroll-progress" aria-hidden="true"><span id="scroll-progress-bar"></span></div>
+
+  <header class="site-head" id="site-head">
+    <div class="wrap head-inner">
+      <a class="brand" href="#home" aria-label="Girish Benni — back to top">
+        <span class="brand__mark" aria-hidden="true"><span>GB</span></span>
+        <span class="brand__text">
+          <span class="brand__name" data-bind="name">Girish Benni</span>
+          <span class="brand__sub">Portfolio / 2026</span>
+        </span>
+      </a>
+
+      <nav class="nav" id="primary-nav" aria-label="Primary">
+        <ol class="nav__list">
+          <li><a href="#home" data-nav="home"><span class="nav__num">01</span>Home</a></li>
+          <li><a href="#about" data-nav="about"><span class="nav__num">02</span>About</a></li>
+          <li><a href="#projects" data-nav="projects"><span class="nav__num">03</span>Projects</a></li>
+          <li><a href="#cybersecurity" data-nav="cybersecurity"><span class="nav__num">04</span>Security</a></li>
+          <li><a href="#ai" data-nav="ai"><span class="nav__num">05</span>AI</a></li>
+          <li><a href="#github" data-nav="github"><span class="nav__num">06</span>GitHub</a></li>
+          <li><a href="#writing" data-nav="writing"><span class="nav__num">07</span>Writing</a></li>
+          <li><a href="#contact" data-nav="contact"><span class="nav__num">08</span>Contact</a></li>
+        </ol>
+        <p class="nav__foot" aria-hidden="true">A working record<br>of things built, broken, and written down.</p>
+      </nav>
+
+      <button class="nav-toggle" id="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav">
+        <span class="nav-toggle__label">Menu</span>
+        <span class="nav-toggle__bars" aria-hidden="true"><i></i><i></i></span>
+      </button>
+    </div>
+  </header>
+
+  <main id="main">
+
+    <!-- ================= HERO ================= -->
+    <section class="hero" id="home" aria-labelledby="hero-title">
+      <div class="wrap hero__grid">
+        <div class="hero__main">
+          <p class="eyebrow">
+            <span class="eyebrow__dot" aria-hidden="true"></span>
+            <span data-bind="eyebrow">Portfolio — selected work and notes</span>
+          </p>
+
+          <h1 class="hero__name" id="hero-title">
+            <span class="hero__first" data-bind="firstName">Girish</span>
+            <span class="hero__last" data-bind="lastName">Benni</span><span class="hero__dot" aria-hidden="true">.</span>
+          </h1>
+
+          <p class="hero__headline" data-bind="headline">I build small, tested things — then write down what broke.</p>
+
+          <p class="hero__intro" data-bind="intro">
+            This is a working portfolio: software I have built, security labs I have run on
+            machines I own, AI experiments, open-source notes, and writing. Some of it is
+            finished, some of it is still a draft. Both are labelled.
+          </p>
+
+          <div class="hero__actions">
+            <a class="btn btn--primary" href="#projects">
+              Explore my work
+              <svg class="icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
+            <a class="btn btn--ghost" href="#contact">Get in touch</a>
+          </div>
+
+          <ul class="hero__socials" id="hero-socials" aria-label="Elsewhere"></ul>
+        </div>
+
+        <aside class="hero__side" aria-label="Orientation">
+          <figure class="terminal" role="img" aria-label="Terminal window reading: whoami returns girish benni; the folder listing shows about, projects, security, ai, writing and contact; a note says learning in public, building in small tested pieces.">
+            <div class="terminal__bar" aria-hidden="true">
+              <span class="terminal__dots"><i></i><i></i><i></i></span>
+              <span class="terminal__title">~/portfolio</span>
+              <span class="terminal__tag">zsh</span>
+            </div>
+            <div class="terminal__body" aria-hidden="true">
+              <p class="t-line" style="--i:0"><span class="t-prompt">$</span> whoami</p>
+              <p class="t-line" style="--i:1"><span class="t-out">girish benni</span></p>
+              <p class="t-line" style="--i:2"><span class="t-prompt">$</span> ls</p>
+              <p class="t-line" style="--i:3"><span class="t-out"><span class="t-dir">about/</span>  <span class="t-dir">projects/</span>  <span class="t-dir">security/</span>  <span class="t-dir">ai/</span>  <span class="t-dir">writing/</span></span></p>
+              <p class="t-line" style="--i:4"><span class="t-prompt">$</span> cat now.txt</p>
+              <p class="t-line" style="--i:5"><span class="t-note"># learning in public</span></p>
+              <p class="t-line" style="--i:6"><span class="t-note"># building in small, tested pieces</span></p>
+              <p class="t-line" style="--i:7"><span class="t-prompt">$</span> <span class="t-caret" aria-hidden="true"></span></p>
+            </div>
+            <figcaption class="terminal__foot">
+              <span>read-only view</span>
+              <span class="terminal__sig">gb@portfolio</span>
+            </figcaption>
+          </figure>
+
+          <nav class="hero__index" aria-label="Portfolio sections">
+            <p class="hero__index-title">Sections</p>
+            <ul id="hero-index"></ul>
+          </nav>
+        </aside>
+      </div>
+
+      <div class="ticker" aria-hidden="true">
+        <div class="ticker__track" id="ticker-track">
+          <span>Projects</span><i></i><span>Security labs</span><i></i><span>AI experiments</span><i></i><span>Open source</span><i></i><span>Writing</span><i></i>
+          <span>Projects</span><i></i><span>Security labs</span><i></i><span>AI experiments</span><i></i><span>Open source</span><i></i><span>Writing</span><i></i>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= ABOUT ================= -->
+    <section class="section" id="about" aria-labelledby="about-title">
+      <div class="wrap">
+        <header class="s-head">
+          <p class="s-index"><span class="s-index__num">01</span> About</p>
+          <h2 class="s-title" id="about-title">A working record,<br>not a highlight reel.</h2>
+          <p class="s-intro" data-bind="aboutIntro">
+            I would rather show the thing, the notes, and the rough edge than describe a
+            version of myself that does not exist yet.
+          </p>
+        </header>
+
+        <div class="about__grid">
+          <div class="about__body" id="about-body">
+            <p class="about__lede" data-bind="aboutLede">
+              This site collects what I am actually working on: code, security labs run in
+              isolated environments, AI experiments, and the writing that comes out of them.
+            </p>
+            <p>
+              Nothing here is a metric for its own sake. There are no follower counts, no
+              invented certifications, and no statistics I cannot point at. When a project is
+              a placeholder, it says so.
+            </p>
+            <p>
+              I am interested in how systems fail — badly written parsers, over-permissioned
+              APIs, models that sound confident and are not — and in building the smaller,
+              clearer version that does not.
+            </p>
+          </div>
+
+          <aside class="about__aside" aria-label="At a glance">
+            <div class="idcard">
+              <div class="idcard__top">
+                <span class="idcard__mono" aria-hidden="true">GB</span>
+                <span class="idcard__meta">Index<br>001</span>
+              </div>
+              <div class="idcard__rule" aria-hidden="true"></div>
+              <p class="idcard__name" data-bind="name">Girish Benni</p>
+              <p class="idcard__role" data-bind="role">Developer · security learner · writer</p>
+              <div class="idcard__bars" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+              <dl class="idcard__rows">
+                <div><dt>Based</dt><dd data-bind="location">Not listed</dd></div>
+                <div><dt>Focus</dt><dd data-bind="focus">Software · security · AI</dd></div>
+                <div><dt>Status</dt><dd data-bind="status">Portfolio in progress</dd></div>
+              </dl>
+            </div>
+
+            <div class="currently" id="currently">
+              <p class="currently__title">Currently</p>
+              <ul class="currently__list" id="currently-list"></ul>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= PROJECTS ================= -->
+    <section class="section" id="projects" aria-labelledby="projects-title">
+      <div class="wrap">
+        <header class="s-head">
+          <p class="s-index"><span class="s-index__num">02</span> Projects</p>
+          <h2 class="s-title" id="projects-title">Things that<br>actually run.</h2>
+          <p class="s-intro" data-bind="projectsIntro">
+            Selected builds, with the repository or a live link where one exists. Filter by
+            the kind of work, not by a logo wall.
+          </p>
+        </header>
+
+        <div class="filters" role="group" aria-label="Filter projects by category" id="project-filters"></div>
+        <p class="filter-status" id="filter-status" role="status" aria-live="polite"></p>
+
+        <div class="project-list" id="project-list"></div>
+
+        <p class="empty-note" id="projects-empty" hidden>
+          No projects in this category yet.
+        </p>
+
+        <p class="dev-note" data-dev-only hidden>
+          Placeholder projects are visible with a <strong>placeholder</strong> label. Replace
+          them in <code>script.js</code> before publishing.
+        </p>
+      </div>
+    </section>
+
+    <!-- ================= CYBERSECURITY ================= -->
+    <section class="section section--security" id="cybersecurity" aria-labelledby="security-title">
+      <div class="wrap">
+        <header class="s-head">
+          <p class="s-index"><span class="s-index__num">03</span> Cybersecurity</p>
+          <h2 class="s-title" id="security-title">Labs, notes,<br>and careful testing.</h2>
+          <p class="s-intro" data-bind="securityIntro">
+            Hands-on work in networks, Linux, web and API security. Everything here was run
+            in an environment I control, or one I was explicitly authorised to test.
+          </p>
+        </header>
+
+        <div class="security__grid">
+          <aside class="security__aside">
+            <div class="ethics" id="ethics-notice">
+              <div class="ethics__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.4-2.9 8.4-7 10-4.1-1.6-7-5.6-7-10V6l7-3z" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M8.8 12.2l2.1 2.1 4.3-4.4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+              <p class="ethics__title">Authorised testing only</p>
+              <p class="ethics__text">Security testing belongs on systems you own or have written permission to test. Nothing in these notes is an invitation to point a tool at someone else's infrastructure.</p>
+              <p class="ethics__meta mono">Scope → local labs &amp; permitted targets</p>
+            </div>
+            <p class="security__count" id="security-count"></p>
+          </aside>
+
+          <ol class="lab-list" id="security-list"></ol>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= AI ================= -->
+    <section class="section section--ai" id="ai" aria-labelledby="ai-title">
+      <div class="wrap">
+        <header class="s-head">
+          <p class="s-index"><span class="s-index__num">04</span> AI projects</p>
+          <h2 class="s-title" id="ai-title">Experiments,<br>not magic.</h2>
+          <p class="s-intro" data-bind="aiIntro">
+            Small AI tools and tests: what the model did, what it got wrong, and what I would
+            change. No benchmarks unless I ran them.
+          </p>
+        </header>
+
+        <div class="ai-grid" id="ai-grid"></div>
+      </div>
+    </section>
+
+    <!-- ================= GITHUB ================= -->
+    <section class="section section--github" id="github" aria-labelledby="github-title">
+      <div class="wrap">
+        <header class="s-head">
+          <p class="s-index"><span class="s-index__num">05</span> GitHub</p>
+          <h2 class="s-title" id="github-title">Source,<br>in the open.</h2>
+          <p class="s-intro" data-bind="githubIntro">
+            Repositories I am willing to put my name on — including the unfinished ones.
+          </p>
+        </header>
+
+        <div class="github__body" id="github-body"></div>
+        <p class="dev-note" data-dev-only hidden>
+          Add <code>socials.github</code> and a few real repositories in <code>script.js</code>.
+          Live repository data is optional and off by default.
+        </p>
+      </div>
+    </section>
+
+    <!-- ================= WRITING ================= -->
+    <section class="section" id="writing" aria-labelledby="writing-title">
+      <div class="wrap">
+        <header class="s-head">
+          <p class="s-index"><span class="s-index__num">06</span> Writing</p>
+          <h2 class="s-title" id="writing-title">Notes from<br>the work.</h2>
+          <p class="s-intro" data-bind="writingIntro">
+            Technical write-ups, lab notes, and essays. Drafts are marked as drafts; they are
+            not links until they are published somewhere.
+          </p>
+        </header>
+
+        <ol class="writing-list" id="writing-list"></ol>
+      </div>
+    </section>
+
+    <!-- Author / book section is injected by script.js only when enabled AND data exists. -->
+
+    <!-- ================= CONTACT ================= -->
+    <section class="section section--contact" id="contact" aria-labelledby="contact-title">
+      <div class="wrap">
+        <header class="s-head">
+          <p class="s-index"><span class="s-index__num">07</span> Contact</p>
+          <h2 class="s-title" id="contact-title">Have something<br>worth building?</h2>
+          <p class="s-intro" data-bind="contactIntro">
+            The quickest way to reach me is email. If a link is not listed here, it is not
+            configured — nothing is hidden behind a fake form.
+          </p>
+        </header>
+
+        <div class="contact__body">
+          <div class="contact__primary" id="contact-primary"></div>
+          <div class="contact__side">
+            <p class="contact__label">Elsewhere</p>
+            <ul class="contact__links" id="contact-links"></ul>
+            <p class="contact__note" data-bind="contactNote">Usually reply within a couple of days.</p>
+          </div>
+        </div>
+
+        <div class="dev-panel" id="dev-checklist" data-dev-only hidden>
+          <p class="dev-panel__title">Pre-publication checklist</p>
+          <ul id="dev-checklist-list"></ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-foot">
+    <div class="wrap foot-inner">
+      <div class="foot__id">
+        <span class="foot__mark" aria-hidden="true">GB</span>
+        <span>
+          <span data-bind="name">Girish Benni</span>
+          <span class="foot__copy">© <span id="year">2026</span> · All rights reserved</span>
+        </span>
+      </div>
+      <ul class="foot__links" id="footer-links"></ul>
+      <a class="foot__top" href="#home">
+        Back to top
+        <svg class="icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 13V3M4 7l4-4 4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+    </div>
+  </footer>
+
+  <noscript>
+    <div class="noscript">
+      <p>The project, lab, and writing indexes on this page are generated with JavaScript. Enable it to see the full portfolio, or use the contact links in the header.</p>
+    </div>
+  </noscript>
+
+  <script src="script.js" defer></script>
+</body>
+</html>

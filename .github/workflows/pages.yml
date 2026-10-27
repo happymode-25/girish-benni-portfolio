@@ -1,0 +1,70 @@
+name: Deploy portfolio to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Use Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build the static site
+        env:
+          # Optional repository variables (Settings → Secrets and variables →
+          # Actions → Variables). Set these only when using a custom domain.
+          SITE_BASE_URL: ${{ vars.SITE_BASE_URL }}
+          SITE_CNAME: ${{ vars.SITE_CNAME }}
+        run: |
+          REPO_NAME="${GITHUB_REPOSITORY#*/}"
+          OWNER="${GITHUB_REPOSITORY%%/*}"
+          if [[ "$REPO_NAME" == *.github.io ]]; then
+            DEFAULT_URL="https://$OWNER.github.io"
+          else
+            DEFAULT_URL="https://$OWNER.github.io/$REPO_NAME"
+          fi
+          BASE_URL="${SITE_BASE_URL:-$DEFAULT_URL}"
+          if [[ -n "$SITE_CNAME" ]]; then
+            node scripts/build.mjs --base-url "$BASE_URL" --cname "$SITE_CNAME"
+          else
+            node scripts/build.mjs --base-url "$BASE_URL"
+          fi
+
+      - name: Verify the build
+        run: node scripts/check.mjs
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload the artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
